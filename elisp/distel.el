@@ -39,6 +39,10 @@
   (interactive)
   (add-hook 'erlang-mode-hook 'distel-erlang-mode-hook))
 
+;;;###autoload
+(eval-after-load "erlang"
+  '(distel-setup))
+
 (defun distel-erlang-mode-hook ()
   "Function to enable the Distel extensions to Erlang mode.
 You can add this to `erlang-mode-hook' with:
