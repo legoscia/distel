@@ -1,5 +1,5 @@
 PACKAGE := distel
-VERSION := 4.02
+VERSION := 4.0.2.1
 
 prefix      = /usr/local
 exec_prefix = ${prefix}
@@ -8,6 +8,8 @@ datadir     = ${prefix}/share
 infodir     = ${prefix}/info
 erlc        = erlc
 emacs       = emacs
+# On Mac OS X, GNU tar is "gnutar"
+tar         = $(or $(shell which gnutar),$(shell which tar))
 
 ELISP_DIR = ${datadir}/distel/elisp
 EBIN_DIR = ${datadir}/distel/ebin
@@ -41,7 +43,7 @@ erl: ${ERL_OBJ}
 ## Rules
 
 ## Erlang
-ebin/%.beam: src/%.erl
+ebin/%.beam: src/%.erl | ebin
 	${erlc} -W -o ebin +debug_info $<
 
 ## Elisp
@@ -93,6 +95,22 @@ dist: always distclean
 		  xargs tar czf ${PACKAGE}-${VERSION}.tar.gz)
 	rm ../${PACKAGE}-${VERSION}
 
+# Create package for Emacs' package.el
+package: distel-${VERSION}.tar
+
+distel-${VERSION}.tar: ${ERL_OBJ} ${INFO_OBJ} $(wildcard elisp/*.el) distel-pkg.el
+	rm -f $@
+	ln -sf . distel-${VERSION}
+	$(tar) --transform 's,/elisp/,/,' -cf $@ distel-${VERSION}/elisp/*.el distel-${VERSION}/distel-pkg.el
+	$(tar) -rf $@ distel-${VERSION}/ebin/*.beam
+	install-info --dir-file=dir ${INFO_OBJ}
+	$(tar) --transform 's,/doc/,/,' -rf $@ distel-${VERSION}/README distel-${VERSION}/dir distel-${VERSION}/${INFO_OBJ}
+	rm distel-${VERSION}
+	@echo Now install $@ with M-x package-install-file
+
+distel-pkg.el: always
+	echo '(define-package "distel" "${VERSION}" "Distributed Emacs Lisp for Erlang" nil)' > $@
+
 wc:
 	@echo "* Emacs Lisp"
 	@wc -l */*.el | sort -nr
@@ -101,5 +119,5 @@ wc:
 	@echo "* C"
 	@wc -l */*.c | sort -nr
 
-.INTERMEDIATE: doc/distel.dvi
-.PHONY: always
+.INTERMEDIATE: doc/distel.dvi distel-pkg.el
+.PHONY: always package

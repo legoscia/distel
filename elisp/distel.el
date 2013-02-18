@@ -34,7 +34,9 @@
 
 (require 'distel-ie)
 
+;;;###autoload
 (defun distel-setup ()
+  (interactive)
   (add-hook 'erlang-mode-hook 'distel-erlang-mode-hook))
 
 (defun distel-erlang-mode-hook ()
